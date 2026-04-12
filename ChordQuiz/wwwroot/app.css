@@ -71,8 +71,8 @@ h1:focus {
     margin-bottom: 0.5rem;
 }
 
-.key-select {
-    max-width: 150px;
+.mode-root-select {
+    max-width: 140px;
     font-weight: 600;
 }
 
@@ -86,7 +86,6 @@ h1:focus {
 .chord-table {
     font-size: 0.82rem;
     border-collapse: collapse;
-    min-width: 900px;
 }
 
 .chord-table thead th {
@@ -95,51 +94,66 @@ h1:focus {
     text-align: center;
 }
 
-.chord-table .mode-header {
-    min-width: 120px;
-    text-align: left;
+.triad-table {
+    min-width: 480px;
 }
 
-.chord-table .degree-header {
-    min-width: 140px;
+.triad-table .degree-header-col {
+    min-width: 70px;
+    text-align: center;
 }
 
-/* Mode name column */
-.mode-name-cell {
+.triad-table .note-col-header {
+    min-width: 130px;
+    text-align: center;
+}
+
+/* Degree column */
+.degree-cell {
     vertical-align: middle;
+    text-align: center;
     padding: 0.4rem 0.6rem;
-    white-space: nowrap;
     background: #f8f9fa;
+    white-space: nowrap;
 }
 
-.mode-name {
-    font-weight: 600;
+.degree-roman {
+    font-weight: 700;
+    font-size: 1rem;
     display: block;
 }
 
-.mode-number {
-    font-size: 0.75rem;
+.triad-quality {
+    font-size: 0.7rem;
+    display: block;
 }
 
-/* Individual chord cells */
-.chord-cell {
+/* Individual note cells */
+.note-cell {
     padding: 0.35rem;
     vertical-align: middle;
     transition: background-color 0.2s ease;
 }
 
-.note-dropdown {
-    margin-bottom: 4px;
+.note-letter-dropdown {
+    min-width: 56px;
+    max-width: 56px;
     font-size: 0.8rem;
+    padding-left: 0.4rem;
+    padding-right: 0.2rem;
 }
 
-.quality-dropdown {
+.note-acc-dropdown {
+    min-width: 56px;
+    max-width: 56px;
     font-size: 0.8rem;
+    padding-left: 0.4rem;
+    padding-right: 0.2rem;
 }
 
 /* Validation state colours */
 .cell-correct {
-    background-color: #d1e7dd !important;   /* Bootstrap success-subtle */
+    background-color: #d1e7dd !important;
 }
 
 .cell-correct .form-select {
@@ -148,7 +162,7 @@ h1:focus {
 }
 
 .cell-incorrect {
-    background-color: #f8d7da !important;   /* Bootstrap danger-subtle */
+    background-color: #f8d7da !important;
 }
 
 .cell-incorrect .form-select {

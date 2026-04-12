@@ -6,21 +6,44 @@
 
 <h1 class="quiz-title">Chord Quiz</h1>
 <p class="quiz-subtitle">
-    Select a key, then use the dropdowns to identify the <strong>root note</strong>
-    and <strong>chord quality</strong> for every degree of each mode.
+    Select a key, mode, and inversion, then fill in the three notes of each diatonic triad.
 </p>
 
 <div class="quiz-controls">
     <div class="d-flex align-items-center gap-3 flex-wrap">
         <div class="d-flex align-items-center gap-2">
             <label class="fw-bold fs-5 mb-0" for="keySelect">Key:</label>
-            <select id="keySelect" class="form-select key-select"
+            <select id="keySelect" class="form-select mode-root-select"
                     value="@SelectedKey"
                     @onchange="OnKeyChanged">
-                @foreach (var key in MusicTheory.Keys)
+                @foreach (var root in AvailableRoots)
                 {
-                    <option value="@key">@key Major</option>
+                    <option value="@root">@root</option>
                 }
+            </select>
+        </div>
+
+        <div class="d-flex align-items-center gap-2">
+            <label class="fw-bold fs-5 mb-0" for="modeSelect">Mode:</label>
+            <select id="modeSelect" class="form-select mode-root-select"
+                    value="@SelectedModeIndex"
+                    @onchange="OnModeChanged">
+                @for (int mi = 0; mi < MusicTheory.Modes.Length; mi++)
+                {
+                    var idx = mi;
+                    <option value="@idx">@MusicTheory.Modes[idx].Name</option>
+                }
+            </select>
+        </div>
+
+        <div class="d-flex align-items-center gap-2">
+            <label class="fw-bold fs-5 mb-0" for="inversionSelect">Inversion:</label>
+            <select id="inversionSelect" class="form-select mode-root-select"
+                    value="@SelectedInversion"
+                    @onchange="OnInversionChanged">
+                <option value="root">Root</option>
+                <option value="third">Third</option>
+                <option value="fifth">Fifth</option>
             </select>
         </div>
 
@@ -36,54 +59,58 @@
                 Reveal Answers
             </button>
             <span class="score-badge badge bg-@ScoreColor">
-                @Score / 49
+                @Score / 21
             </span>
         }
     </div>
 </div>
 
 <div class="table-responsive mt-3">
-    <table class="table table-bordered table-sm chord-table">
+    <table class="table table-bordered table-sm chord-table triad-table">
         <thead>
             <tr class="table-dark">
-                <th class="mode-header">Mode</th>
-                @for (int d = 1; d <= 7; d++)
+                <th class="degree-header-col">Degree</th>
+                @foreach (var label in NotePositionLabels)
                 {
-                    <th class="degree-header">Degree @d</th>
+                    <th class="note-col-header">@label</th>
                 }
             </tr>
         </thead>
         <tbody>
-            @for (int mi = 0; mi < 7; mi++)
+            @for (int ti = 0; ti < 7; ti++)
             {
-                var modeIdx = mi;
+                var triadIdx = ti;
                 <tr>
-                    <td class="mode-name-cell">
-                        <span class="mode-name">@MusicTheory.Modes[modeIdx].Name</span>
-                        <span class="mode-number text-muted">(@(modeIdx + 1))</span>
+                    <td class="degree-cell">
+                        <span class="degree-roman">@RomanNumerals[ti]</span>
+                        @if (ShowResults)
+                        {
+                            <span class="triad-quality text-muted">@GetTriadQuality(ti)</span>
+                        }
                     </td>
-                    @for (int di = 0; di < 7; di++)
+                    @for (int ni = 0; ni < 3; ni++)
                     {
-                        var degIdx = di;
-                        var cellClass = GetCellClass(modeIdx, degIdx);
-                        <td class="chord-cell @cellClass">
-                            <select class="form-select form-select-sm note-dropdown"
-                                    value="@SelectedNotes[modeIdx][degIdx]"
-                                    @onchange="e => OnNoteChanged(modeIdx, degIdx, e)">
-                                <option value="">Note…</option>
-                                @foreach (var note in MusicTheory.GetKeyNotes(SelectedKey))
-                                {
-                                    <option value="@note">@note</option>
-                                }
-                            </select>
-                            <select class="form-select form-select-sm quality-dropdown"
-                                    value="@SelectedQualities[modeIdx][degIdx]"
-                                    @onchange="e => OnQualityChanged(modeIdx, degIdx, e)">
-                                <option value="">Quality…</option>
-                                <option value="Major">Major</option>
-                                <option value="Minor">Minor</option>
-                                <option value="Diminished">Diminished</option>
-                            </select>
+                        var noteIdx = ni;
+                        var cellClass = GetCellClass(triadIdx, noteIdx);
+                        <td class="note-cell @cellClass">
+                            <div class="d-flex gap-1">
+                                <select class="form-select form-select-sm note-letter-dropdown"
+                                        value="@SelectedNoteLetters[triadIdx][noteIdx]"
+                                        @onchange="e => OnNoteLetterChanged(triadIdx, noteIdx, e)">
+                                    <option value="">?</option>
+                                    @foreach (var letter in NoteLetters)
+                                    {
+                                        <option value="@letter">@letter</option>
+                                    }
+                                </select>
+                                <select class="form-select form-select-sm note-acc-dropdown"
+                                        value="@SelectedAccidentals[triadIdx][noteIdx]"
+                                        @onchange="e => OnAccidentalChanged(triadIdx, noteIdx, e)">
+                                    <option value="">♮</option>
+                                    <option value="#">#</option>
+                                    <option value="b">b</option>
+                                </select>
+                            </div>
                         </td>
                     }
                 </tr>
@@ -92,49 +119,87 @@
     </table>
 </div>
 
-@if (ShowResults && Score < 49)
+@if (ShowResults && Score < 21)
 {
     <p class="mt-2 text-muted small">
         Cells highlighted in <span class="text-success fw-semibold">green</span> are correct;
         <span class="text-danger fw-semibold">red</span> cells need another look.
     </p>
 }
-@if (ShowResults && Score == 49)
+@if (ShowResults && Score == 21)
 {
     <div class="alert alert-success mt-3 fw-semibold" role="alert">
-        Perfect score! All 49 triads correct.
+        Perfect score! All 21 notes correct.
     </div>
 }
 
 @code {
+    private static readonly string[] NoteLetters = ["C", "D", "E", "F", "G", "A", "B"];
+    private static readonly string[] RomanNumerals = ["I", "II", "III", "IV", "V", "VI", "VII"];
+
     private string SelectedKey = "C";
-    private string[][] SelectedNotes = MakeGrid();
-    private string[][] SelectedQualities = MakeGrid();
+    private int SelectedModeIndex = 0;
+    private string SelectedInversion = "root";
+
+    private string[][] SelectedNoteLetters = MakeGrid();
+    private string[][] SelectedAccidentals = MakeGrid();
     private bool?[][] Results = MakeResultGrid();
     private bool ShowResults;
 
+    private string[] AvailableRoots => MusicTheory.GetAvailableRoots(SelectedModeIndex);
+
+    private string[] NotePositionLabels => SelectedInversion switch
+    {
+        "root"  => ["Root", "Third", "Fifth"],
+        "third" => ["Third", "Fifth", "Root"],
+        "fifth" => ["Fifth", "Root", "Third"],
+        _       => ["Note 1", "Note 2", "Note 3"]
+    };
+
     private static string[][] MakeGrid() =>
-        Enumerable.Range(0, 7)
-                  .Select(_ => Enumerable.Repeat(string.Empty, 7).ToArray())
-                  .ToArray();
+        Enumerable.Range(0, 7).Select(_ => Enumerable.Repeat(string.Empty, 3).ToArray()).ToArray();
 
     private static bool?[][] MakeResultGrid() =>
-        Enumerable.Range(0, 7).Select(_ => new bool?[7]).ToArray();
+        Enumerable.Range(0, 7).Select(_ => new bool?[3]).ToArray();
 
     private int Score => Results.Sum(row => row.Count(v => v == true));
 
     private string ScoreColor => Score switch
     {
-        49      => "success",
-        >= 40   => "primary",
-        >= 28   => "warning",
-        _       => "danger"
+        21     => "success",
+        >= 17  => "primary",
+        >= 11  => "warning",
+        _      => "danger"
     };
 
-    private string GetCellClass(int mi, int di)
+    private string[] GetCorrectTriadNotes(int ti)
+    {
+        var modeNotes = MusicTheory.GetModeNotesFromRoot(SelectedKey, SelectedModeIndex);
+        var root  = modeNotes[ti];
+        var third = modeNotes[(ti + 2) % 7];
+        var fifth = modeNotes[(ti + 4) % 7];
+        return SelectedInversion switch
+        {
+            "root"  => [root, third, fifth],
+            "third" => [third, fifth, root],
+            "fifth" => [fifth, root, third],
+            _       => [root, third, fifth]
+        };
+    }
+
+    private string GetTriadQuality(int ti)
+    {
+        var triads = MusicTheory.GetModeTriadsFromRoot(SelectedKey, SelectedModeIndex);
+        return triads[ti].Quality.ToString();
+    }
+
+    private static (string Letter, string Acc) SplitNote(string note) =>
+        note.Length > 1 ? (note[0].ToString(), note[1..]) : (note, "");
+
+    private string GetCellClass(int ti, int ni)
     {
         if (!ShowResults) return string.Empty;
-        return Results[mi][di] switch
+        return Results[ti][ni] switch
         {
             true  => "cell-correct",
             false => "cell-incorrect",
@@ -144,34 +209,48 @@
 
     private void OnKeyChanged(ChangeEventArgs e)
     {
-        SelectedKey = e.Value?.ToString() ?? "C";
+        SelectedKey = e.Value?.ToString() ?? AvailableRoots[0];
         Reset();
     }
 
-    private void OnNoteChanged(int mi, int di, ChangeEventArgs e)
+    private void OnModeChanged(ChangeEventArgs e)
     {
-        SelectedNotes[mi][di] = e.Value?.ToString() ?? string.Empty;
+        if (int.TryParse(e.Value?.ToString(), out int mi))
+            SelectedModeIndex = mi;
+        var roots = MusicTheory.GetAvailableRoots(SelectedModeIndex);
+        if (!roots.Contains(SelectedKey))
+            SelectedKey = roots[0];
+        Reset();
     }
 
-    private void OnQualityChanged(int mi, int di, ChangeEventArgs e)
+    private void OnInversionChanged(ChangeEventArgs e)
     {
-        SelectedQualities[mi][di] = e.Value?.ToString() ?? string.Empty;
+        SelectedInversion = e.Value?.ToString() ?? "root";
+        Reset();
+    }
+
+    private void OnNoteLetterChanged(int ti, int ni, ChangeEventArgs e)
+    {
+        SelectedNoteLetters[ti][ni] = e.Value?.ToString() ?? string.Empty;
+    }
+
+    private void OnAccidentalChanged(int ti, int ni, ChangeEventArgs e)
+    {
+        SelectedAccidentals[ti][ni] = e.Value?.ToString() ?? string.Empty;
     }
 
     private void CheckAnswers()
     {
-        for (int mi = 0; mi < 7; mi++)
+        for (int ti = 0; ti < 7; ti++)
         {
-            var correct = MusicTheory.GetModeTriads(SelectedKey, mi);
-            for (int di = 0; di < 7; di++)
+            var correctNotes = GetCorrectTriadNotes(ti);
+            for (int ni = 0; ni < 3; ni++)
             {
-                var note = SelectedNotes[mi][di];
-                var quality = SelectedQualities[mi][di];
-
-                bool answered = !string.IsNullOrEmpty(note) && !string.IsNullOrEmpty(quality);
-                Results[mi][di] = answered
-                    && note == correct[di].Note
-                    && quality == correct[di].Quality.ToString();
+                var (letter, acc) = SplitNote(correctNotes[ni]);
+                bool answered = !string.IsNullOrEmpty(SelectedNoteLetters[ti][ni]);
+                Results[ti][ni] = answered
+                    && SelectedNoteLetters[ti][ni] == letter
+                    && SelectedAccidentals[ti][ni] == acc;
             }
         }
         ShowResults = true;
@@ -179,22 +258,23 @@
 
     private void Reset()
     {
-        SelectedNotes = MakeGrid();
-        SelectedQualities = MakeGrid();
+        SelectedNoteLetters = MakeGrid();
+        SelectedAccidentals = MakeGrid();
         Results = MakeResultGrid();
         ShowResults = false;
     }
 
     private void RevealAnswers()
     {
-        for (int mi = 0; mi < 7; mi++)
+        for (int ti = 0; ti < 7; ti++)
         {
-            var correct = MusicTheory.GetModeTriads(SelectedKey, mi);
-            for (int di = 0; di < 7; di++)
+            var correctNotes = GetCorrectTriadNotes(ti);
+            for (int ni = 0; ni < 3; ni++)
             {
-                SelectedNotes[mi][di] = correct[di].Note;
-                SelectedQualities[mi][di] = correct[di].Quality.ToString();
-                Results[mi][di] = true;
+                var (letter, acc) = SplitNote(correctNotes[ni]);
+                SelectedNoteLetters[ti][ni] = letter;
+                SelectedAccidentals[ti][ni] = acc;
+                Results[ti][ni] = true;
             }
         }
         ShowResults = true;

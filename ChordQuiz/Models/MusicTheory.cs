@@ -88,4 +88,24 @@ public static class MusicTheory
         var qualities = ModeTriadPatterns[modeIndex];
         return [.. Enumerable.Range(0, 7).Select(i => new Triad(notes[i], qualities[i]))];
     }
+
+    /// <summary>Returns the 12 valid modal roots for a given mode index, derived from the 12 parent keys.</summary>
+    public static string[] GetAvailableRoots(int modeIndex) =>
+        [.. Keys.Select(k => KeyNoteMap[k][modeIndex])];
+
+    /// <summary>Returns the 7 notes for a mode whose root is the given note.</summary>
+    public static string[] GetModeNotesFromRoot(string root, int modeIndex)
+    {
+        var parentKey = Keys.FirstOrDefault(k => KeyNoteMap[k][modeIndex] == root)
+            ?? throw new ArgumentException($"No parent key contains '{root}' as mode degree {modeIndex}");
+        return GetModeNotes(parentKey, modeIndex);
+    }
+
+    /// <summary>Returns the 7 correct triads for a mode whose root is the given note.</summary>
+    public static Triad[] GetModeTriadsFromRoot(string root, int modeIndex)
+    {
+        var notes = GetModeNotesFromRoot(root, modeIndex);
+        var qualities = ModeTriadPatterns[modeIndex];
+        return [.. Enumerable.Range(0, 7).Select(i => new Triad(notes[i], qualities[i]))];
+    }
 }
