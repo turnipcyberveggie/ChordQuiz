@@ -1,6 +1,9 @@
 <div class="top-row ps-3 navbar navbar-dark">
     <div class="container-fluid">
         <a class="navbar-brand" href="">Chord Quiz</a>
+        <button class="collapse-btn" @onclick="OnToggle" title="Toggle navigation">
+            @(Collapsed ? "›" : "‹")
+        </button>
     </div>
 </div>
 
@@ -15,3 +18,8 @@
         </div>
     </nav>
 </div>
+
+@code {
+    [Parameter] public bool Collapsed { get; set; }
+    [Parameter] public EventCallback OnToggle { get; set; }
+}
