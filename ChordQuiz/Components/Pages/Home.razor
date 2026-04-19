@@ -93,7 +93,7 @@
                         var noteIdx = ni;
                         var cellClass = GetCellClass(triadIdx, noteIdx);
                         <td class="note-cell @cellClass">
-                            <div class="d-flex gap-1">
+                            <div class="d-flex gap-1 justify-content-center">
                                 <select class="form-select form-select-sm note-letter-dropdown"
                                         value="@SelectedNoteLetters[triadIdx][noteIdx]"
                                         @onchange="e => OnNoteLetterChanged(triadIdx, noteIdx, e)">
