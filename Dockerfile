@@ -6,7 +6,7 @@ RUN dotnet restore "ChordQuiz/ChordQuiz.csproj"
 
 COPY . .
 WORKDIR /src/ChordQuiz
-RUN dotnet publish "ChordQuiz.csproj" -c Release -o /app/publish --no-restore
+RUN dotnet publish "ChordQuiz.csproj" -c Release -o /app/publish
 
 FROM mcr.microsoft.com/dotnet/aspnet:10.0 AS final
 WORKDIR /app
