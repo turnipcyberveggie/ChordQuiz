@@ -151,6 +151,15 @@ h1:focus {
     padding-right: 0.2rem;
 }
 
+.interval-table {
+    min-width: 900px;
+}
+
+.interval-table .interval-mode-col {
+    min-width: 90px;
+    text-align: center;
+}
+
 /* Validation state colours */
 .cell-correct {
     background-color: #d1e7dd !important;

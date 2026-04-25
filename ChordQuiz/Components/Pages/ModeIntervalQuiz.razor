@@ -1,0 +1,197 @@
+@page "/mode-interval-quiz"
+@rendermode InteractiveServer
+@using ChordQuiz.Models
+
+<PageTitle>Mode Interval Quiz</PageTitle>
+
+<h1 class="quiz-title">Mode Interval Quiz</h1>
+<p class="quiz-subtitle">
+    Select a root note, then fill in the 7 notes for each mode.
+</p>
+
+<div class="quiz-controls">
+    <div class="d-flex align-items-center gap-3 flex-wrap">
+        <div class="d-flex align-items-center gap-2">
+            <label class="fw-bold fs-5 mb-0" for="rootSelect">Root:</label>
+            <select id="rootSelect" class="form-select mode-root-select"
+                    value="@SelectedRoot"
+                    @onchange="OnRootChanged">
+                @foreach (var root in ValidRoots)
+                {
+                    <option value="@root">@root</option>
+                }
+            </select>
+        </div>
+
+        <button class="btn btn-primary btn-sm" @onclick="CheckAnswers">Check Answers</button>
+        <button class="btn btn-outline-secondary btn-sm" @onclick="Reset">Reset</button>
+        <button class="btn btn-outline-secondary btn-sm" @onclick="Clear">Clear</button>
+
+        @if (ShowResults)
+        {
+            <span class="score-badge badge bg-@ScoreColor">@Score / 49</span>
+        }
+    </div>
+</div>
+
+<div class="table-responsive mt-3">
+    <table class="table table-bordered table-sm chord-table interval-table">
+        <thead>
+            <tr class="table-dark">
+                <th class="interval-mode-col">Mode</th>
+                <th class="note-col-header">1</th>
+                <th class="note-col-header">2</th>
+                <th class="note-col-header">3</th>
+                <th class="note-col-header">4</th>
+                <th class="note-col-header">5</th>
+                <th class="note-col-header">6</th>
+                <th class="note-col-header">7</th>
+            </tr>
+        </thead>
+        <tbody>
+            @for (int mi = 0; mi < ModeOrder.Length; mi++)
+            {
+                var modeOrderIdx = mi;
+                var modeIndex = ModeOrder[mi];
+                var modeName = MusicTheory.Modes[modeIndex].Name;
+                <tr>
+                    <td class="degree-cell">@modeName</td>
+                    @for (int ni = 0; ni < 7; ni++)
+                    {
+                        var noteIdx = ni;
+                        var cellClass = GetCellClass(modeOrderIdx, noteIdx);
+                        <td class="note-cell @cellClass">
+                            <div class="d-flex gap-1 justify-content-center">
+                                <select class="form-select form-select-sm note-letter-dropdown"
+                                        value="@SelectedNoteLetters[modeOrderIdx][noteIdx]"
+                                        @onchange="e => OnNoteLetterChanged(modeOrderIdx, noteIdx, e)">
+                                    <option value="">?</option>
+                                    @foreach (var letter in NoteLetters)
+                                    {
+                                        <option value="@letter">@letter</option>
+                                    }
+                                </select>
+                                <select class="form-select form-select-sm note-acc-dropdown"
+                                        value="@SelectedAccidentals[modeOrderIdx][noteIdx]"
+                                        @onchange="e => OnAccidentalChanged(modeOrderIdx, noteIdx, e)">
+                                    <option value="">♮</option>
+                                    <option value="#">#</option>
+                                    <option value="b">b</option>
+                                </select>
+                            </div>
+                        </td>
+                    }
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+@if (ShowResults && Score < 49)
+{
+    <p class="mt-2 text-muted small">
+        Cells highlighted in <span class="text-success fw-semibold">green</span> are correct;
+        <span class="text-danger fw-semibold">red</span> cells need another look.
+    </p>
+}
+@if (ShowResults && Score == 49)
+{
+    <div class="alert alert-success mt-3 fw-semibold" role="alert">
+        Perfect score! All 49 notes correct.
+    </div>
+}
+
+@code {
+    // Ordered most sharps to most flats: Lydian, Ionian, Mixolydian, Dorian, Aeolian, Phrygian, Locrian
+    private static readonly int[] ModeOrder = [3, 0, 4, 1, 5, 2, 6];
+    private static readonly string[] NoteLetters = ["C", "D", "E", "F", "G", "A", "B"];
+    private static readonly string[] ValidRoots = MusicTheory.GetValidRootsForAllModes();
+
+    private string SelectedRoot = "C";
+    private string[][] SelectedNoteLetters = MakeGrid();
+    private string[][] SelectedAccidentals = MakeGrid();
+    private bool?[][] Results = MakeResultGrid();
+    private bool ShowResults;
+
+    private static string[][] MakeGrid() =>
+        Enumerable.Range(0, 7).Select(_ => Enumerable.Repeat(string.Empty, 7).ToArray()).ToArray();
+
+    private static bool?[][] MakeResultGrid() =>
+        Enumerable.Range(0, 7).Select(_ => new bool?[7]).ToArray();
+
+    private int Score => Results.Sum(row => row.Count(v => v == true));
+
+    private string ScoreColor => Score switch
+    {
+        49    => "success",
+        >= 40 => "primary",
+        >= 25 => "warning",
+        _     => "danger"
+    };
+
+    private string[] GetCorrectModeNotes(int modeOrderIdx) =>
+        MusicTheory.GetModeNotesFromRoot(SelectedRoot, ModeOrder[modeOrderIdx]);
+
+    private static (string Letter, string Acc) SplitNote(string note) =>
+        note.Length > 1 ? (note[0].ToString(), note[1..]) : (note, "");
+
+    private string GetCellClass(int mi, int ni)
+    {
+        if (!ShowResults) return string.Empty;
+        return Results[mi][ni] switch
+        {
+            true  => "cell-correct",
+            false => "cell-incorrect",
+            null  => string.Empty
+        };
+    }
+
+    private void OnRootChanged(ChangeEventArgs e)
+    {
+        SelectedRoot = e.Value?.ToString() ?? ValidRoots[0];
+        ClearInputs();
+    }
+
+    private void OnNoteLetterChanged(int mi, int ni, ChangeEventArgs e)
+    {
+        SelectedNoteLetters[mi][ni] = e.Value?.ToString() ?? string.Empty;
+    }
+
+    private void OnAccidentalChanged(int mi, int ni, ChangeEventArgs e)
+    {
+        SelectedAccidentals[mi][ni] = e.Value?.ToString() ?? string.Empty;
+    }
+
+    private void CheckAnswers()
+    {
+        for (int mi = 0; mi < 7; mi++)
+        {
+            var correctNotes = GetCorrectModeNotes(mi);
+            for (int ni = 0; ni < 7; ni++)
+            {
+                var (letter, acc) = SplitNote(correctNotes[ni]);
+                bool answered = !string.IsNullOrEmpty(SelectedNoteLetters[mi][ni]);
+                Results[mi][ni] = answered
+                    && SelectedNoteLetters[mi][ni] == letter
+                    && SelectedAccidentals[mi][ni] == acc;
+            }
+        }
+        ShowResults = true;
+    }
+
+    private void Reset()
+    {
+        SelectedRoot = ValidRoots[0];
+        ClearInputs();
+    }
+
+    private void Clear() => ClearInputs();
+
+    private void ClearInputs()
+    {
+        SelectedNoteLetters = MakeGrid();
+        SelectedAccidentals = MakeGrid();
+        Results = MakeResultGrid();
+        ShowResults = false;
+    }
+}

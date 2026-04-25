@@ -101,6 +101,12 @@ public static class MusicTheory
         return GetModeNotes(parentKey, modeIndex);
     }
 
+    /// <summary>Returns roots that are valid for all 7 modes given the 12-key system.</summary>
+    public static string[] GetValidRootsForAllModes() =>
+        [.. Keys.Where(root =>
+            Enumerable.Range(0, 7).All(mi =>
+                Keys.Any(k => KeyNoteMap[k][mi] == root)))];
+
     /// <summary>Returns the 7 correct triads for a mode whose root is the given note.</summary>
     public static Triad[] GetModeTriadsFromRoot(string root, int modeIndex)
     {
