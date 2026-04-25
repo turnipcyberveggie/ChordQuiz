@@ -29,6 +29,7 @@
 
         @if (ShowResults)
         {
+            <button class="btn btn-outline-info btn-sm" @onclick="RevealAnswers">Reveal Answers</button>
             <span class="score-badge badge bg-@ScoreColor">@Score / 49</span>
         }
     </div>
@@ -41,7 +42,7 @@
                 <th class="interval-mode-col">Mode</th>
                 @for (int ni = 0; ni < 7; ni++)
                 {
-                    <th class="note-col-header">@DegreeLetters[ni]</th>
+                    <th class="note-col-header">@(ni + 1)</th>
                 }
             </tr>
         </thead>
@@ -162,6 +163,20 @@
             var correctNotes = MusicTheory.GetModeNotesByInterval(SelectedRoot, ModeOrder[mi]);
             for (int ni = 0; ni < 7; ni++)
                 Results[mi][ni] = SelectedAccidentals[mi][ni] == AccidentalOf(correctNotes[ni]);
+        }
+        ShowResults = true;
+    }
+
+    private void RevealAnswers()
+    {
+        for (int mi = 0; mi < 7; mi++)
+        {
+            var correctNotes = MusicTheory.GetModeNotesByInterval(SelectedRoot, ModeOrder[mi]);
+            for (int ni = 0; ni < 7; ni++)
+            {
+                SelectedAccidentals[mi][ni] = AccidentalOf(correctNotes[ni]);
+                Results[mi][ni] = true;
+            }
         }
         ShowResults = true;
     }
