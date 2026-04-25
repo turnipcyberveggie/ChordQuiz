@@ -6,7 +6,7 @@
 
 <h1 class="quiz-title">Mode Interval Quiz</h1>
 <p class="quiz-subtitle">
-    Select a root note, then fill in the 7 notes for each mode.
+    Select a root note, then choose the accidental (♮ / # / b) for each scale degree across all modes.
 </p>
 
 <div class="quiz-controls">
@@ -39,13 +39,10 @@
         <thead>
             <tr class="table-dark">
                 <th class="interval-mode-col">Mode</th>
-                <th class="note-col-header">1</th>
-                <th class="note-col-header">2</th>
-                <th class="note-col-header">3</th>
-                <th class="note-col-header">4</th>
-                <th class="note-col-header">5</th>
-                <th class="note-col-header">6</th>
-                <th class="note-col-header">7</th>
+                @for (int ni = 0; ni < 7; ni++)
+                {
+                    <th class="note-col-header">@DegreeLetters[ni]</th>
+                }
             </tr>
         </thead>
         <tbody>
@@ -61,22 +58,15 @@
                         var noteIdx = ni;
                         var cellClass = GetCellClass(modeOrderIdx, noteIdx);
                         <td class="note-cell @cellClass">
-                            <div class="d-flex gap-1 justify-content-center">
-                                <select class="form-select form-select-sm note-letter-dropdown"
-                                        value="@SelectedNoteLetters[modeOrderIdx][noteIdx]"
-                                        @onchange="e => OnNoteLetterChanged(modeOrderIdx, noteIdx, e)">
-                                    <option value="">?</option>
-                                    @foreach (var letter in NoteLetters)
-                                    {
-                                        <option value="@letter">@letter</option>
-                                    }
-                                </select>
+                            <div class="d-flex gap-1 align-items-center justify-content-center">
+                                <span class="note-letter-static">@DegreeLetters[noteIdx]</span>
                                 <select class="form-select form-select-sm note-acc-dropdown"
                                         value="@SelectedAccidentals[modeOrderIdx][noteIdx]"
                                         @onchange="e => OnAccidentalChanged(modeOrderIdx, noteIdx, e)">
                                     <option value="">♮</option>
                                     <option value="#">#</option>
                                     <option value="b">b</option>
+                                    <option value="bb">𝄫</option>
                                 </select>
                             </div>
                         </td>
@@ -105,13 +95,24 @@
     // Ordered most sharps to most flats: Lydian, Ionian, Mixolydian, Dorian, Aeolian, Phrygian, Locrian
     private static readonly int[] ModeOrder = [3, 0, 4, 1, 5, 2, 6];
     private static readonly string[] NoteLetters = ["C", "D", "E", "F", "G", "A", "B"];
-    private static readonly string[] ValidRoots = MusicTheory.GetValidRootsForAllModes();
+    private static readonly string[] ValidRoots = MusicTheory.Keys;
 
     private string SelectedRoot = "C";
-    private string[][] SelectedNoteLetters = MakeGrid();
     private string[][] SelectedAccidentals = MakeGrid();
     private bool?[][] Results = MakeResultGrid();
     private bool ShowResults;
+
+    // The 7 letter names always follow the musical alphabet from the root
+    private string[] DegreeLetters
+    {
+        get
+        {
+            var rootIdx = Array.IndexOf(NoteLetters, SelectedRoot[0].ToString());
+            return Enumerable.Range(0, 7)
+                .Select(i => NoteLetters[(rootIdx + i) % 7])
+                .ToArray();
+        }
+    }
 
     private static string[][] MakeGrid() =>
         Enumerable.Range(0, 7).Select(_ => Enumerable.Repeat(string.Empty, 7).ToArray()).ToArray();
@@ -129,11 +130,8 @@
         _     => "danger"
     };
 
-    private string[] GetCorrectModeNotes(int modeOrderIdx) =>
-        MusicTheory.GetModeNotesFromRoot(SelectedRoot, ModeOrder[modeOrderIdx]);
-
-    private static (string Letter, string Acc) SplitNote(string note) =>
-        note.Length > 1 ? (note[0].ToString(), note[1..]) : (note, "");
+    private static string AccidentalOf(string note) =>
+        note.Length > 1 ? note[1..] : "";
 
     private string GetCellClass(int mi, int ni)
     {
@@ -152,11 +150,6 @@
         ClearInputs();
     }
 
-    private void OnNoteLetterChanged(int mi, int ni, ChangeEventArgs e)
-    {
-        SelectedNoteLetters[mi][ni] = e.Value?.ToString() ?? string.Empty;
-    }
-
     private void OnAccidentalChanged(int mi, int ni, ChangeEventArgs e)
     {
         SelectedAccidentals[mi][ni] = e.Value?.ToString() ?? string.Empty;
@@ -166,15 +159,9 @@
     {
         for (int mi = 0; mi < 7; mi++)
         {
-            var correctNotes = GetCorrectModeNotes(mi);
+            var correctNotes = MusicTheory.GetModeNotesByInterval(SelectedRoot, ModeOrder[mi]);
             for (int ni = 0; ni < 7; ni++)
-            {
-                var (letter, acc) = SplitNote(correctNotes[ni]);
-                bool answered = !string.IsNullOrEmpty(SelectedNoteLetters[mi][ni]);
-                Results[mi][ni] = answered
-                    && SelectedNoteLetters[mi][ni] == letter
-                    && SelectedAccidentals[mi][ni] == acc;
-            }
+                Results[mi][ni] = SelectedAccidentals[mi][ni] == AccidentalOf(correctNotes[ni]);
         }
         ShowResults = true;
     }
@@ -189,7 +176,6 @@
 
     private void ClearInputs()
     {
-        SelectedNoteLetters = MakeGrid();
         SelectedAccidentals = MakeGrid();
         Results = MakeResultGrid();
         ShowResults = false;

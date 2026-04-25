@@ -107,6 +107,67 @@ public static class MusicTheory
             Enumerable.Range(0, 7).All(mi =>
                 Keys.Any(k => KeyNoteMap[k][mi] == root)))];
 
+    // Semitone distance above C for each natural note
+    private static readonly Dictionary<char, int> NaturalPitches = new()
+    {
+        ['C'] = 0, ['D'] = 2, ['E'] = 4, ['F'] = 5,
+        ['G'] = 7, ['A'] = 9, ['B'] = 11
+    };
+
+    private static readonly char[] NoteLetterChars = ['C', 'D', 'E', 'F', 'G', 'A', 'B'];
+
+    // Intervals (semitones from root) for each mode, indexed to match Modes[]
+    private static readonly int[][] ModeIntervalPatterns =
+    [
+        [0, 2, 4, 5, 7, 9, 11], // Ionian
+        [0, 2, 3, 5, 7, 9, 10], // Dorian
+        [0, 1, 3, 5, 7, 8, 10], // Phrygian
+        [0, 2, 4, 6, 7, 9, 11], // Lydian
+        [0, 2, 4, 5, 7, 9, 10], // Mixolydian
+        [0, 2, 3, 5, 7, 8, 10], // Aeolian
+        [0, 1, 3, 5, 6, 8, 10], // Locrian
+    ];
+
+    /// <summary>
+    /// Derives mode notes purely from interval arithmetic so any standard root works,
+    /// including flat keys whose parent keys aren't in the 12-key map.
+    /// May return double-flat notes (e.g. "Bbb") for the flattest modes in flat keys.
+    /// </summary>
+    public static string[] GetModeNotesByInterval(string root, int modeIndex)
+    {
+        char rootLetter = root[0];
+        int rootPitch = NaturalPitches[rootLetter];
+        for (int i = 1; i < root.Length; i++)
+        {
+            if (root[i] == '#') rootPitch++;
+            else if (root[i] == 'b') rootPitch--;
+        }
+        rootPitch = ((rootPitch % 12) + 12) % 12;
+
+        int rootLetterIdx = Array.IndexOf(NoteLetterChars, rootLetter);
+        var intervals = ModeIntervalPatterns[modeIndex];
+        var result = new string[7];
+
+        for (int degree = 0; degree < 7; degree++)
+        {
+            int targetPitch = (rootPitch + intervals[degree]) % 12;
+            char letter = NoteLetterChars[(rootLetterIdx + degree) % 7];
+            int naturalPitch = NaturalPitches[letter];
+            int diff = (targetPitch - naturalPitch + 12) % 12;
+            string accidental = diff switch
+            {
+                0  => "",
+                1  => "#",
+                2  => "##",
+                11 => "b",
+                10 => "bb",
+                _  => "?"
+            };
+            result[degree] = letter + accidental;
+        }
+        return result;
+    }
+
     /// <summary>Returns the 7 correct triads for a mode whose root is the given note.</summary>
     public static Triad[] GetModeTriadsFromRoot(string root, int modeIndex)
     {
